@@ -53,12 +53,12 @@
     if (!oldShow) {
         if (self.showViewArr.count >= self.maxGiftShowCount && ![self.showViewArr containsObject:GW_GiftViewRemoved]) {
             if (self.addMode == 0) {
-                //排序 最小的时间在第一个
+                //排序 创建时间最小的在第一个
                 NSArray * sortArr = [self.showViewArr sortedArrayUsingComparator:^NSComparisonResult(GW_GiftShowView * obj1, GW_GiftShowView * obj2) {
                     return [obj1.creatDate compare:obj2.creatDate];
                 }];
                 GW_GiftShowView * oldestView = sortArr.firstObject;
-                //重置模型
+                //重置模型 注意：将时间最早的替换掉
                 [self resetView:oldestView nowModel:showModel isChangeNum:isResetNumber number:showNumber];
             }
             return;
@@ -88,7 +88,6 @@
             frame.origin.x = -[UIScreen mainScreen].bounds.size.width;
         }
         GW_GiftShowView * newShowView = [[GW_GiftShowView alloc] initWithFrame:frame];
-//        newShowView.backgroundColor = randomColor;
         //赋值
         newShowView.model = showModel;
         newShowView.hiddenMode = self.hiddenMode;
@@ -107,20 +106,23 @@
 //            if (weakSelf.delegate && [weakSelf.delegate respondsToSelector:@selector(giftDidRemove:)]) {
 //                [weakSelf.delegate giftDidRemove:willReMoveShowView.model];
 //            }
-            //从数组移除
+            //从数组移除 将移除的view替换成GW_GiftViewRemoved，做上标记
             [weakSelf.showViewArr replaceObjectAtIndex:willReMoveShowView.index withObject:GW_GiftViewRemoved];
             //从字典移除
             NSString * willReMoveShowViewKey = [weakSelf getDictKey:willReMoveShowView.model];
             [weakSelf.showViewDict removeObjectForKey:willReMoveShowViewKey];
             
-            NSLog(@"移除了第%zi个,移除后数组 = %@ ,词典 = %@",willReMoveShowView.index,weakSelf.showViewArr,weakSelf.showViewDict);
+//            NSLog(@"移除了第%zi个,移除后数组 = %@ ,词典 = %@",willReMoveShowView.index,weakSelf.showViewArr,weakSelf.showViewDict);
             
             //比较数量大小排序
             [weakSelf sortShowArr];
+//            从新排序设置各个view的y值
             [weakSelf resetY];
             if (weakSelf.addMode == GW_GiftAddModeAdd) {
+//                将等待展示的view，展示出来
                 [weakSelf showWaitView];
             } else if (weakSelf.addMode == GW_GiftAddModeReplace) {
+//                关闭定时器
                 if (willReMoveShowView.model.animatedTimer) {
                     dispatch_cancel(willReMoveShowView.model.animatedTimer);
                 }
@@ -130,6 +132,7 @@
         [self addSubview:newShowView];
         
         //加入数组
+//        如果包含需要移除的index，就替换
         if ([self.showViewArr containsObject:GW_GiftViewRemoved]) {
             newShowView.index = removedViewIndex;
             [self.showViewArr replaceObjectAtIndex:removedViewIndex withObject:newShowView];
@@ -168,7 +171,7 @@
                 }
             }
             if (showCount >= self.maxGiftShowCount) {//弹幕数量大于最大数量
-                [self addToQueue:showModel];
+                [self addToWaitQueueArr:showModel];
                 return;
             }
         }
@@ -191,7 +194,7 @@
     dispatch_resume(tt);
 }
 
-- (void)addToQueue:(GW_GiftShowModel *)showModel {
+- (void)addToWaitQueueArr:(GW_GiftShowModel *)showModel {
     if (!showModel) {
         return;
     }
@@ -200,6 +203,7 @@
     for (NSUInteger i = 0; i<self.waitQueueArr.count; i++) {
         GW_GiftShowModel *oldModel = self.waitQueueArr[i];
         NSString * oldKey = [self getDictKey:oldModel];
+//        如果有相同的，就先移除，再添加
         if ([oldKey isEqualToString:key]) {
             oldNumber = oldModel.appendNum;
             showModel.appendNum += oldNumber;
@@ -282,7 +286,7 @@
         }
     }
     dispatch_semaphore_signal(_signal_t);
-    NSLog(@"排序后数组==>>> %@",self.showViewArr);
+//    NSLog(@"排序后数组==>>> %@",self.showViewArr);
 }
 
 - (void)searchLiveShowViewFrom:(int)i{

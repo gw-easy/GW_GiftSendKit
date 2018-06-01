@@ -250,11 +250,15 @@ static const float rightMargicNum = 2;
         self.numberView.giftNumber = number;
         self.isSetNumber = YES;
     }
-    //每调用一次self.numberView.number get方法 自增1
+    //每调用一次self.numberView.giftNumber get方法 自增1
     NSInteger giftNum = self.numberView.giftNumber;
+//    改变发送数量
     [self.numberView changeNumber:giftNum];
+//    开启定时和动画
     [self handleNumber:giftNum];
+//    当前数量
     self.model.currentNum = giftNum;
+//    创建时间
     self.creatDate = [NSDate date];
 }
 
